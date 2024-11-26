@@ -42,7 +42,7 @@ def find_dimensions(drawing):
     
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return send_file('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
