@@ -1,23 +1,34 @@
 from flask import Flask, request, jsonify, send_file
 import ezdxf
 import io
+from draw import draw_structure
 
-app = Flask(__name__, 
-            static_folder='../static')
+app = Flask(__name__)
+
+# Variables globales
+cotas_vertical = []
+cotas_horizontal = []
+
+def find_dimensions(drawing):
+    global cotas_vertical, cotas_horizontal
+    cotas_vertical = []
+    cotas_horizontal = []
+    
+    # ... resto del código de find_dimensions ...
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file uploaded'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        if not file.filename.endswith('.dxf'):
-            return jsonify({'error': 'Invalid file type'}), 400
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.endswith('.dxf'):
+        return jsonify({'error': 'Invalid file type'}), 400
 
+    try:
         # Usar BytesIO en lugar de archivos temporales
         file_content = file.read()
         file_stream = io.BytesIO(file_content)
@@ -26,12 +37,15 @@ def upload_file():
         drawing = ezdxf.readfile(file_stream)
         
         # Encontrar las dimensiones
-        dimensions = find_dimensions(drawing)
+        find_dimensions(drawing)
         
-        return jsonify(dimensions)
+        return jsonify({
+            'cotas_vertical': cotas_vertical,
+            'cotas_horizontal': cotas_horizontal
+        })
     except Exception as e:
-        print(f"Error en upload_file: {str(e)}\nTraceback: {traceback.format_exc()}", file=sys.stderr)
-        return jsonify({"error": str(e)}), 500
+        print(f"Error processing DXF: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/generate', methods=['POST'])
 def generate():
