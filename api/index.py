@@ -1,32 +1,23 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file
 import ezdxf
-import os
-from datetime import datetime
 import io
-from draw import draw_structure
 
 app = Flask(__name__, 
-            template_folder='../templates',  # Ajusta la ruta de templates
-            static_folder='../static')       # Ajusta la ruta de static
+            static_folder='../static')
 
-# Modifica la función home para usar render_template
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if not file.filename.endswith('.dxf'):
-        return jsonify({'error': 'Invalid file type'}), 400
-
     try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.endswith('.dxf'):
+            return jsonify({'error': 'Invalid file type'}), 400
+
         # Usar BytesIO en lugar de archivos temporales
         file_content = file.read()
         file_stream = io.BytesIO(file_content)
@@ -35,17 +26,14 @@ def upload_file():
         drawing = ezdxf.readfile(file_stream)
         
         # Encontrar las dimensiones
-        find_dimensions(drawing)
+        dimensions = find_dimensions(drawing)
         
-        return jsonify({
-            'cotas_vertical': cotas_vertical,
-            'cotas_horizontal': cotas_horizontal
-        })
+        return jsonify(dimensions)
     except Exception as e:
-        print(f"Error processing DXF: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        print(f"Error en upload_file: {str(e)}\nTraceback: {traceback.format_exc()}", file=sys.stderr)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/generate', methods=['POST'])
+@app.route('/api/generate', methods=['POST'])
 def generate():
     try:
         data = request.get_json()
