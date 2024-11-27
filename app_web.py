@@ -57,9 +57,8 @@ def upload_file():
         return jsonify({'error': 'Invalid file type'}), 400
 
     try:
-        # Guardar el archivo temporalmente
-        temp_path = os.path.join('temp', file.filename)
-        os.makedirs('temp', exist_ok=True)
+        # Cambiar la ruta temporal
+        temp_path = os.path.join('/tmp', file.filename)
         file.save(temp_path)
 
         # Leer el archivo DXF
@@ -97,7 +96,7 @@ def generate():
         t_diag = data['tipoDiagonal']
 
         # Crear un archivo temporal para el output
-        with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix='.dxf', delete=False, dir='/tmp') as tmp_file:
             output_path = tmp_file.name
             
             # Llamar a draw_structure en lugar de generate_structure
@@ -126,4 +125,5 @@ def generate():
         print(f"Error en generate: {str(e)}")  # Para debugging
         return jsonify({'error': str(e)}), 500
 
-app = app
+if __name__ == '__main__':
+    app.run()
